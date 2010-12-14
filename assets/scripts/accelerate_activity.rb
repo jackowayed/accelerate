@@ -1,21 +1,40 @@
 require 'ruboto.rb'
 
-ruboto_import_widgets :TextView, :LinearLayout, :Button
+ruboto_import_widgets :TextView
+
+java_import "android.content.Context"
+java_import "android.hardware.SensorManager"
+java_import "android.graphics.drawable.ColorDrawable"
+java_import "android.graphics.Color"
+java_import "android.hardware.Sensor"
+ruboto_import "com.danieljackoway.accelerate.AccelerometerEventListener"
 
 $activity.handle_create do |bundle|
-  setTitle 'This is the Title'
+  setTitle 'Shake to Change Color'
 
-  setup_content do
-    linear_layout :orientation => LinearLayout::VERTICAL do
-      @text_view = text_view :text => "What hath Matz wrought?"
-      button :text => "M-x butterfly", :width => :wrap_content
+  @sensors = getSystemService Context::SENSOR_SERVICE
+  accelerometers = @sensors.getSensorList(Sensor::TYPE_ACCELEROMETER)
+  unless accelerometers.empty?
+    @accelerometer = accelerometers[0]
+  end
+  @sensor = AccelerometerEventListener.new
+
+  @sensor.handle_sensor_changed do |sensor_event|
+    vals = sensor_event.values
+    if Math.sqrt(vals[0] ** 2 + vals[1] ** 2 + vals[2] ** 2) > 12
+      getWindow.setBackgroundDrawable ColorDrawable.new(Color.rgb(rand(255), rand(255), rand(255)))
     end
   end
 
-  handle_click do |view|
-    if view.getText == 'M-x butterfly'
-      @text_view.setText "What hath Matz wrought!"
-      toast 'Flipped a bit via butterfly'
-    end
+  setup_content do
+    text_view :text => "shake!"
+  end
+
+  handle_pause do
+    @sensors.unregisterListener @sensor, @accelerometer if @accelerometer
+  end
+
+  handle_resume do
+    @sensors.registerListener @sensor, @accelerometer, SensorManager::SENSOR_DELAY_UI if @accelerometer
   end
 end
