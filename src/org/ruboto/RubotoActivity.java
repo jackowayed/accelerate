@@ -127,6 +127,8 @@ public class RubotoActivity extends android.app.Activity {
     public void run(){
       loadingDialog.dismiss();
       finishCreate();
+      onStart();
+      onResume();
     }
   };
 
